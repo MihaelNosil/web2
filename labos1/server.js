@@ -1,29 +1,26 @@
 const express = require('express');
+const { auth } = require('express-openid-connect')
+require('dotenv/config');
 const path = require('path');
 const app = express();
 const port = 3000;
 
 app.use(express.static(path.join(__dirname, 'public')));
+;
 
-app.get('/api/message', (req, res) => {
-  res.json({ message: 'Hello from the server!' });
-});
+const config = {
+  authRequired: false,
+  auth0Logout: true,
+  baseURL: process.env.BASE_URL,
+  clientID: process.env.CLIENT_ID,
+  issuerBaseURL: process.env.ISSUER_BASE_URL,
+  secret: process.env.SECRET
+};
 
-app.listen(port, () => {
-  console.log(`Express server running at http://localhost:${port}`);
-});
+// auth router attaches /login, /logout, and /callback routes to the baseURL
+app.use(auth(config));
 
-const { Pool } = require('pg');
-
-const pool = new Pool({
-  connectionString: 'postgres://user:gim2UhC1sySSk97Lc99djDNyZIEyNCBk@dpg-ckv3i9mb0mos73edt1bg-a.oregon-postgres.render.com/roundrobinturnir', // Use the environment variable
-});
-
-// Example query
-pool.query('SELECT * FROM your_table', (err, result) => {
-  if (err) {
-    console.error('Error executing query', err);
-    return;
-  }
-  console.log('Query result:', result.rows);
+// req.isAuthenticated is provided from the auth router
+app.get('/', (req, res) => {
+  res.send(req.oidc.isAuthenticated() ? 'Logged in' : 'Logged out')
 });
